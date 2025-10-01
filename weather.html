@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi-City Weather</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #56CCF2, #2F80ED);
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #controls {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    input {
+      width: 60%;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+      outline: none;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #0056cc;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #003d99;
+    }
+    #cardsContainer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .weather-card {
+      background: #2196F3;
+      padding: 20px;
+      border-radius: 12px;
+      width: 260px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .weather-card h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .temp {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .desc {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      text-transform: capitalize;
+    }
+    .details {
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    .forecast {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .day {
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 5px;
+      width: 50px;
+      font-size: 0.8rem;
+    }
+    .day img {
+      width: 30px;
+      height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Weather for Multiple Cities</h1>
+
+  <div id="controls">
+    <input type="text" id="cityInput" placeholder="Enter cities (e.g. London, Paris, Tokyo)">
+    <button onclick="getWeather()">Search</button>
+  </div>
+
+  <div id="cardsContainer"></div>
+
+  <script>
+    const apiKey = "fcedf11060794ac9acb592faf9c20477";
+
+    async function getWeather() {
+      const container = document.getElementById("cardsContainer");
+      container.innerHTML = ""; 
+      const cityInput = document.getElementById("cityInput").value || "London,New York,Tokyo,Mumbai,Sydney,Hyderabad";
+      const cities = cityInput.split(",").map(c => c.trim());
+
+      for (let city of cities) {
+        try {
+          // Current weather
+          const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+          const currentRes = await fetch(currentUrl);
+          const currentData = await currentRes.json();
+
+          if (currentData.cod !== 200) {
+            container.innerHTML += `<div class="weather-card"><h2>❌ ${city} not found</h2></div>`;
+            continue;
+          }
+
+          // 5-day forecast
+          const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+          const forecastRes = await fetch(forecastUrl);
+          const forecastData = await forecastRes.json();
+
+          let forecastHTML = "";
+          if (forecastData.cod === "200") {
+         
+            const days = [];
+            forecastData.list.forEach(item => {
+              if (item.dt_txt.includes("12:00:00")) {
+                days.push({
+                  date: new Date(item.dt_txt),
+                  temp: Math.round(item.main.temp),
+                  icon: item.weather[0].icon
+                });
+              }
+            });
+
+            forecastHTML = `<div class="forecast">`;
+            days.slice(0, 5).forEach(d => {
+              const dayName = d.date.toLocaleDateString("en-US", { weekday: "short" });
+              forecastHTML += `
+                <div class="day">
+                  <div>${dayName}</div>
+                  <img src="https://openweathermap.org/img/wn/${d.icon}.png" alt="">
+                  <div>${d.temp}°C</div>
+                </div>
+              `;
+            });
+            forecastHTML += `</div>`;
+          }
+
+          const card = `
+            <div class="weather-card">
+              <h2>${currentData.name}, ${currentData.sys.country}</h2>
+              <div class="temp">${Math.round(currentData.main.temp)}°C</div>
+              <div class="desc">${currentData.weather[0].description}</div>
+              <div class="details">
+                Feels like: ${currentData.main.feels_like} °C<br>
+                Humidity: ${currentData.main.humidity}%<br>
+                Wind: ${currentData.wind.speed} m/s
+              </div>
+              ${forecastHTML}
+            </div>
+          `;
+          container.innerHTML += card;
+
+        } catch (err) {
+          container.innerHTML += `<div class="weather-card"><h2>⚠️ Error loading ${city}</h2></div>`;
+        }
+      }
+    }
+
+    window.onload = getWeather;
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+        
+
